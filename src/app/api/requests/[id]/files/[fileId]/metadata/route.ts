@@ -57,11 +57,30 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // 현재 파일 메타데이터 가져오기
+    const { data: currentFile, error: currentFileError } = await supabase
+      .from('request_files')
+      .select('metadata')
+      .eq('id', fileId)
+      .eq('request_id', requestId)
+      .single();
+
+    if (currentFileError || !currentFile) {
+      return NextResponse.json({ error: '파일을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    // 메타데이터 병합
+    const currentMetadata = currentFile.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      specialNotes: specialNotes
+    };
+
     // 파일 메타데이터 업데이트
     const { data: updatedFile, error: updateError } = await supabase
       .from('request_files')
       .update({
-        metadata: supabase.raw(`metadata || '{"specialNotes": "${specialNotes}"}'::jsonb`),
+        metadata: updatedMetadata,
         updated_at: new Date().toISOString(),
       })
       .eq('id', fileId)
