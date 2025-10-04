@@ -61,8 +61,8 @@ export default function CalendarView({ requests, onEventClick }: CalendarViewPro
     .map(request => ({
       id: request.id,
       title: request.title,
-      start: new Date(request.request_date),
-      end: request.due_date ? new Date(request.due_date) : new Date(request.request_date),
+      start: new Date(request.created_at),
+      end: request.requested_deadline ? new Date(request.requested_deadline) : new Date(request.created_at),
       resource: {
         request
       }
