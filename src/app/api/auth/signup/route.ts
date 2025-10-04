@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
 import { SignupFormSchema } from '@/domains/auth/types';
 import { UserRole } from '@/domains/auth/types';
 

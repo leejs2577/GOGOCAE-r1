@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { RequestStatus } from '@/domains/request/types';
 
+export const runtime = 'nodejs';
+
 interface RouteParams {
   params: Promise<{
     id: string;

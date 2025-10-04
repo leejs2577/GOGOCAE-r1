@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/domains/request/types';
 import { sanitizeFileName, generateFilePath, createFileMetadata, getFileTypeFromExtension } from '@/lib/file-upload';
 
+export const runtime = 'nodejs';
+
 interface RouteParams {
   params: Promise<{
     id: string;

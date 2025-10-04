@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+export const runtime = 'nodejs';
+
 interface Activity {
   id: string;
   type: 'request_created' | 'request_assigned' | 'request_completed' | 'request_updated';

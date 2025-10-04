@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { CreateRequestSchema } from '@/domains/request/types';
 
+export const runtime = 'nodejs';
+
 // GET /api/requests - 요청 목록 조회
 export async function GET(request: NextRequest) {
   try {
