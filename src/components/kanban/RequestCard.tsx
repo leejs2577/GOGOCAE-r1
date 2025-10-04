@@ -75,13 +75,13 @@ export default function RequestCard({ request, onCardClick }: RequestCardProps) 
             {/* 차종 */}
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <FileText className="h-3 w-3" />
-              <span>{request.vehicle_type}</span>
+              <span>{request.car_model}</span>
             </div>
 
             {/* 요청일 */}
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Calendar className="h-3 w-3" />
-              <span>{formatDate(request.request_date)}</span>
+              <span>{formatDate(request.created_at)}</span>
             </div>
 
             {/* 보고서 상태 */}
