@@ -70,7 +70,7 @@ export default function RequestsPage() {
     const matchesDateRange = (() => {
       if (!dateRange.from && !dateRange.to) return true;
       
-      const requestDate = new Date(request.request_date);
+      const requestDate = new Date(request.created_at);
       const fromDate = dateRange.from ? new Date(dateRange.from) : null;
       const toDate = dateRange.to ? new Date(dateRange.to) : null;
       
