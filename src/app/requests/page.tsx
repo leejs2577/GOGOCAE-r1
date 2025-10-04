@@ -483,10 +483,10 @@ export default function RequestsPage() {
                       )}
                       
                       <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                        <span>차종: {request.vehicle_type}</span>
-                        <span>요청일: {formatDate(request.request_date)}</span>
-                        {request.due_date && (
-                          <span>마감일: {formatDate(request.due_date)}</span>
+                        <span>차종: {request.car_model}</span>
+                        <span>요청일: {formatDate(request.created_at)}</span>
+                        {request.requested_deadline && (
+                          <span>마감일: {formatDate(request.requested_deadline)}</span>
                         )}
                         {request.assignee_id && (
                           <span>담당자: 해석자 1</span>
