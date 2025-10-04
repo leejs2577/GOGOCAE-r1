@@ -1,9 +1,20 @@
-'use client';
-
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Users, Calendar, FileText, BarChart3, ArrowRight } from 'lucide-react';
+
+// SSG를 위한 메타데이터
+export const metadata = {
+  title: '고고CAE - CAE 해석 업무를 한눈에',
+  description: '설계자와 해석자가 CAE 해석 요청·진행·보고를 한 곳에서 관리할 수 있는 클라우드 SaaS 웹 서비스',
+  keywords: 'CAE, 해석, 설계, 엔지니어링, 클라우드, SaaS',
+  openGraph: {
+    title: '고고CAE - CAE 해석 업무를 한눈에',
+    description: '설계자와 해석자가 CAE 해석 요청·진행·보고를 한 곳에서 관리할 수 있는 클라우드 SaaS 웹 서비스',
+    type: 'website',
+  },
+};
 
 export default function Home() {
 
@@ -166,6 +177,73 @@ export default function Home() {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">완료</h3>
               <p className="text-gray-600">
                 보고서를 업로드하고 설계자가 결과를 다운로드합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Screenshots Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              실제 화면 미리보기
+            </h2>
+            <p className="text-lg text-gray-600">
+              실제 사용하는 화면들을 미리 확인해보세요
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 대시보드 미리보기 */}
+            <div className="text-center">
+              <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+                <div className="aspect-video bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900">대시보드</h3>
+                    <p className="text-sm text-gray-600">통계 및 현황 한눈에 파악</p>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">대시보드</h3>
+              <p className="text-gray-600">
+                주요 통계 카드와 현황 피드로 업무 현황을 실시간으로 확인할 수 있습니다.
+              </p>
+            </div>
+
+            {/* 칸반 보드 미리보기 */}
+            <div className="text-center">
+              <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+                <div className="aspect-video bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900">칸반 보드</h3>
+                    <p className="text-sm text-gray-600">드래그 앤 드롭으로 상태 관리</p>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">칸반 보드</h3>
+              <p className="text-gray-600">
+                직관적인 칸반 보드로 요청 상태를 드래그 앤 드롭으로 쉽게 관리할 수 있습니다.
+              </p>
+            </div>
+
+            {/* 캘린더 미리보기 */}
+            <div className="text-center">
+              <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+                <div className="aspect-video bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <Calendar className="h-16 w-16 text-purple-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900">캘린더</h3>
+                    <p className="text-sm text-gray-600">일정 및 마감일 관리</p>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">캘린더 뷰</h3>
+              <p className="text-gray-600">
+                캘린더 형태로 요청 일정과 마감일을 한눈에 확인하고 관리할 수 있습니다.
               </p>
             </div>
           </div>
