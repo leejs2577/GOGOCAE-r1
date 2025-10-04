@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/middleware';
 
+export const runtime = 'nodejs';
+
 // 보호된 라우트들
 const protectedRoutes = ['/dashboard', '/requests', '/admin'];
 
