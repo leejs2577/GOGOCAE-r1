@@ -1,168 +1,215 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Github, Copy, Sparkles } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
-
-const PACKAGE_NAME = '@easynext/cli';
-const CURRENT_VERSION = 'v0.1.38';
-
-function latestVersion(packageName: string) {
-  return axios
-    .get('https://registry.npmjs.org/' + packageName + '/latest')
-    .then((res) => res.data.version);
-}
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, Users, Calendar, FileText, BarChart3, ArrowRight } from 'lucide-react';
 
 export default function Home() {
-  const { toast } = useToast();
-  const [latest, setLatest] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchLatestVersion = async () => {
-      try {
-        const version = await latestVersion(PACKAGE_NAME);
-        setLatest(`v${version}`);
-      } catch (error) {
-        console.error('Failed to fetch version info:', error);
-      }
-    };
-    fetchLatestVersion();
-  }, []);
-
-  const handleCopyCommand = () => {
-    navigator.clipboard.writeText(`npm install -g ${PACKAGE_NAME}@latest`);
-    toast({
-      description: 'Update command copied to clipboard',
-    });
-  };
-
-  const needsUpdate = latest && latest !== CURRENT_VERSION;
 
   return (
-    <div className="flex min-h-screen relative overflow-hidden">
-      {/* Main Content */}
-      <div className="min-h-screen flex bg-gray-100">
-        <div className="flex flex-col p-5 md:p-8 space-y-4">
-          <h1 className="text-3xl md:text-5xl font-semibold tracking-tighter !leading-tight text-left">
-            Easiest way to start
-            <br /> Next.js project
-            <br /> with Cursor
-          </h1>
-
-          <p className="text-lg text-muted-foreground">
-            Get Pro-created Next.js bootstrap just in seconds
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="gap-2 w-fit rounded-full px-4 py-2 border border-black"
-            >
-              <a href="https://github.com/easynextjs/easynext" target="_blank">
-                <Github className="w-4 h-4" />
-                GitHub
-              </a>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="gap-2 w-fit rounded-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white"
-            >
-              <a href="https://easynext.org/premium" target="_blank">
-                <Sparkles className="w-4 h-4" />
-                Premium
-              </a>
-            </Button>
-          </div>
-          <Section />
-        </div>
-      </div>
-
-      <div className="min-h-screen ml-16 flex-1 flex flex-col items-center justify-center space-y-4">
-        <div className="flex flex-col items-center space-y-2">
-          <p className="text-muted-foreground">
-            Current Version: {CURRENT_VERSION}
-          </p>
-          <p className="text-muted-foreground">
-            Latest Version:{' '}
-            <span className="font-bold">{latest || 'Loading...'}</span>
-          </p>
-        </div>
-
-        {needsUpdate && (
-          <div className="flex flex-col items-center space-y-2">
-            <p className="text-yellow-600">New version available!</p>
-            <p className="text-sm text-muted-foreground">
-              Copy and run the command below to update:
-            </p>
-            <div className="relative group">
-              <pre className="bg-gray-100 p-4 rounded-lg">
-                npm install -g {PACKAGE_NAME}@latest
-              </pre>
-              <button
-                onClick={handleCopyCommand}
-                className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">고고CAE</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" asChild>
+                <Link href="/auth/login">로그인</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/auth/signup">회원가입</Link>
+              </Button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            CAE 해석 업무를
+            <br />
+            <span className="text-blue-600">한눈에</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            설계자와 해석자가 CAE 해석 요청·진행·보고를 한 곳에서 관리할 수 있는 
+            클라우드 SaaS 웹 서비스입니다.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild>
+              <Link href="/auth/signup">
+                지금 시작하기
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/auth/login">로그인</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              주요 기능
+            </h2>
+            <p className="text-lg text-gray-600">
+              효율적인 CAE 업무 관리를 위한 핵심 기능들을 만나보세요
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="text-center">
+              <CardHeader>
+                <div className="mx-auto w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <CardTitle>해석 요청</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  요청명, 차종, 날짜, 파일 첨부를 통한 체계적인 해석 요청 관리
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <div className="mx-auto w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-green-600" />
+                </div>
+                <CardTitle>담당자 지정</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  담당자 지정 및 업무 상태 변경으로 효율적인 작업 분배
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <div className="mx-auto w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                  <Calendar className="h-6 w-6 text-purple-600" />
+                </div>
+                <CardTitle>캘린더·칸반</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  캘린더 뷰와 칸반 보드를 통한 직관적인 업무 상태 관리
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <div className="mx-auto w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart3 className="h-6 w-6 text-orange-600" />
+                </div>
+                <CardTitle>파일 관리</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  모델 업로드, 보고서 업·다운로드를 통한 파일 관리
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Process Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              사용 흐름
+            </h2>
+            <p className="text-lg text-gray-600">
+              간단한 3단계로 CAE 해석 업무를 효율적으로 관리하세요
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
+                <span className="text-2xl font-bold text-white">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">요청</h3>
+              <p className="text-gray-600">
+                설계자가 해석 요청을 생성하고 필요한 파일을 업로드합니다.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6">
+                <span className="text-2xl font-bold text-white">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">진행</h3>
+              <p className="text-gray-600">
+                해석자가 담당을 지정받고 작업을 진행하며 상태를 업데이트합니다.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mb-6">
+                <span className="text-2xl font-bold text-white">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">완료</h3>
+              <p className="text-gray-600">
+                보고서를 업로드하고 설계자가 결과를 다운로드합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            지금 시작하세요
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            CAE 해석 업무의 효율성을 높이고 싶다면 지금 바로 시작해보세요.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" variant="secondary" asChild>
+              <Link href="/auth/signup">
+                무료로 시작하기
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <h3 className="text-2xl font-bold text-white mb-4">고고CAE</h3>
+          <p className="text-gray-400 mb-6">
+            CAE 해석 업무를 한눈에 관리하는 클라우드 서비스
+          </p>
+          <div className="flex justify-center space-x-6">
+            <Button variant="ghost" className="text-gray-400 hover:text-white">
+              <Link href="/auth/login">로그인</Link>
+            </Button>
+            <Button variant="ghost" className="text-gray-400 hover:text-white">
+              <Link href="/auth/signup">회원가입</Link>
+            </Button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function Section() {
-  const items = [
-    { href: 'https://nextjs.org/', label: 'Next.js' },
-    { href: 'https://ui.shadcn.com/', label: 'shadcn/ui' },
-    { href: 'https://tailwindcss.com/', label: 'Tailwind CSS' },
-    { href: 'https://www.framer.com/motion/', label: 'framer-motion' },
-    { href: 'https://zod.dev/', label: 'zod' },
-    { href: 'https://date-fns.org/', label: 'date-fns' },
-    { href: 'https://ts-pattern.dev/', label: 'ts-pattern' },
-    { href: 'https://es-toolkit.dev/', label: 'es-toolkit' },
-    { href: 'https://zustand.docs.pmnd.rs/', label: 'zustand' },
-    { href: 'https://supabase.com/', label: 'supabase' },
-    { href: 'https://react-hook-form.com/', label: 'react-hook-form' },
-  ];
-
-  return (
-    <div className="flex flex-col py-5 md:py-8 space-y-2 opacity-75">
-      <p className="font-semibold">What&apos;s Included</p>
-
-      <div className="flex flex-col space-y-1 text-muted-foreground">
-        {items.map((item) => (
-          <SectionItem key={item.href} href={item.href}>
-            {item.label}
-          </SectionItem>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionItem({
-  children,
-  href,
-}: {
-  children: React.ReactNode;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="flex items-center gap-2 underline"
-      target="_blank"
-    >
-      <CheckCircle className="w-4 h-4" />
-      <p>{children}</p>
-    </a>
-  );
-}

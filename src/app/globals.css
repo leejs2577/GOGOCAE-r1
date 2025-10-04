@@ -67,3 +67,332 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Big Calendar 스타일 */
+.rbc-calendar {
+  font-family: inherit;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 24px;
+}
+
+.rbc-toolbar-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rbc-toolbar-label {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.rbc-btn-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 새로운 네비게이션 버튼 스타일 */
+.nav-arrow-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #374151 !important;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.nav-arrow-btn:hover {
+  background: transparent !important;
+  color: #111827 !important;
+}
+
+.today-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.today-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.rbc-btn-group > button {
+  background: transparent !important;
+  border: none !important;
+  color: #374151 !important;
+  padding: 4px 8px !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: color 0.2s !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.rbc-btn-group > button:hover {
+  background-color: transparent !important;
+  color: #111827 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-btn-group > button.rbc-active {
+  background-color: transparent !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-btn-group > button:focus {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.rbc-btn-group > button:active {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* react-big-calendar 기본 버튼 스타일 제거 */
+.rbc-toolbar button {
+  background: transparent !important;
+  border: none !important;
+  color: #374151 !important;
+  padding: 4px 8px !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: color 0.2s !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.rbc-toolbar button:hover {
+  background-color: transparent !important;
+  color: #111827 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-toolbar button:focus {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.rbc-toolbar button:active {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: transparent !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  font-weight: 700;
+  padding: 12px 8px;
+  text-align: center;
+  color: #374151;
+  font-size: 14px;
+}
+
+.rbc-header:last-child {
+  border-right: none;
+}
+
+.rbc-header:nth-child(1) {
+  color: #dc2626;
+}
+
+.rbc-header:nth-child(7) {
+  color: #2563eb;
+}
+
+.rbc-month-view {
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background: white;
+}
+
+.rbc-month-row {
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 120px;
+}
+
+.rbc-month-row:last-child {
+  border-bottom: none;
+}
+
+.rbc-date-cell {
+  text-align: right;
+  padding: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rbc-date-cell.rbc-off-range {
+  color: #9ca3af;
+}
+
+.rbc-date-cell.rbc-today {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.rbc-day-bg:nth-child(1) {
+  background-color: #fef2f2;
+}
+
+.rbc-day-bg:nth-child(7) {
+  background-color: #eff6ff;
+}
+
+.rbc-row-content {
+  min-height: 120px;
+  position: relative;
+}
+
+.rbc-event {
+  background-color: #3b82f6;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  margin: 1px 2px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rbc-event.rbc-selected {
+  border: 2px solid #000000;
+}
+
+.rbc-event.priority-high {
+  background-color: #ef4444;
+}
+
+.rbc-event.priority-medium {
+  background-color: #eab308;
+}
+
+.rbc-event.priority-low {
+  background-color: #22c55e;
+}
+
+.rbc-event.priority-urgent {
+  background-color: #dc2626;
+}
+
+.rbc-off-range-bg {
+  background-color: #f9fafb;
+}
+
+.rbc-show-more {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  margin: 2px;
+  cursor: pointer;
+}
+
+.rbc-show-more:hover {
+  background-color: #e5e7eb;
+}
+
+.rbc-today {
+  background-color: #dbeafe;
+}
+
+/* 커스텀 검색 및 필터 스타일 */
+.calendar-search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.calendar-search {
+  flex: 1;
+  max-width: 300px;
+}
+
+.calendar-filter {
+  min-width: 200px;
+}
+
+.calendar-new-request {
+  background-color: #111827;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.calendar-new-request:hover {
+  background-color: #374151;
+}
