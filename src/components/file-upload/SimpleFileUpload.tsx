@@ -7,7 +7,7 @@ import { Upload, FileText, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/domains/request/types';
 import { validateFile } from '@/lib/file-upload';
 import { FileService } from '@/services/fileService';
