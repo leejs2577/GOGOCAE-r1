@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Users, Search, Edit, UserCheck, Home } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/domains/auth/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { UpdateProfileSchema, type UpdateProfileData, UserRole } from '@/domains/auth/types';
+
+// 관리자용 프로필 업데이트 스키마
+const AdminUpdateProfileSchema = UpdateProfileSchema.extend({
+  role: z.nativeEnum(UserRole),
+});
+
+type AdminUpdateProfileData = z.infer<typeof AdminUpdateProfileSchema>;
 import { USER_ROLE_LABELS } from '@/domains/auth/constants';
 
 interface UserProfile {
@@ -45,10 +53,11 @@ export default function AdminUsersPage() {
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm<UpdateProfileData & { role: UserRole }>({
-    resolver: zodResolver(UpdateProfileSchema.extend({
-      role: UpdateProfileSchema.shape.email, // 임시로 email과 같은 타입 사용
-    })),
+  } = useForm<AdminUpdateProfileData>({
+    resolver: zodResolver(AdminUpdateProfileSchema),
+    defaultValues: {
+      role: UserRole.DESIGNER,
+    },
   });
 
   const roleValue = watch('role');
@@ -103,7 +112,7 @@ export default function AdminUsersPage() {
     setIsEditDialogOpen(true);
   };
 
-  const onSubmit = async (data: UpdateProfileData & { role: UserRole }) => {
+  const onSubmit = async (data: AdminUpdateProfileData) => {
     if (!selectedUser) {
       console.error('No selected user');
       return;

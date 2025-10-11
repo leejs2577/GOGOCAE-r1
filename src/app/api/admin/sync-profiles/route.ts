@@ -121,8 +121,7 @@ export async function POST() {
       console.error('Auth users fetch error:', authUsersError);
       console.error('Error details:', {
         message: authUsersError.message,
-        status: authUsersError.status,
-        statusText: authUsersError.statusText
+        status: authUsersError.status
       });
       
       // Admin API 실패 시 대안 방법 사용
@@ -162,8 +161,8 @@ export async function POST() {
         const profileData = {
           id: authUser.id,
           email: authUser.email || '',
-          full_name: authUser.user_metadata?.full_name || authUser.raw_user_meta_data?.full_name || '',
-          role: authUser.user_metadata?.role || authUser.raw_user_meta_data?.role || 'designer',
+          full_name: authUser.user_metadata?.full_name || '',
+          role: authUser.user_metadata?.role || 'designer',
           created_at: authUser.created_at,
           updated_at: authUser.updated_at || new Date().toISOString(),
         };

@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 // 알림 삭제
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -19,7 +19,7 @@ export async function DELETE(
       );
     }
 
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // activities 삭제
     const { error } = await supabase
