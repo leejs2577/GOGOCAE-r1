@@ -2,48 +2,55 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, Plus, Users, FileText, Calendar, Kanban } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Users, FileText, Clock, CheckCircle, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { NotificationBell } from '@/components/notification/NotificationBell';
 import { useAuth } from '@/domains/auth/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { USER_ROLE_LABELS } from '@/domains/auth/constants';
-import { DesignerOnly, AnalystOnly, AdminOnly, DesignerAndAdmin, AnalystAndAdmin } from '@/components/auth/RoleGuard';
-import { RequestStatus, type Request } from '@/domains/request/types';
-import KanbanBoard from '@/components/kanban/KanbanBoard';
-import CalendarView from '@/components/calendar/CalendarView';
+import { DesignerAndAdmin } from '@/components/auth/RoleGuard';
+import { type Request } from '@/domains/request/types';
 import { getRequests } from '@/domains/request/services/requestService';
 
+interface Activity {
+  id: string;
+  type: 'request_created' | 'request_assigned' | 'request_updated' | 'request_completed';
+  title: string;
+  description: string;
+  user_name: string;
+  timestamp: string;
+  tag?: string;
+}
+
 export default function DashboardPage() {
-  const { user, isLoading, logout } = useAuth();
-  const { role, canCreateRequest, canAssignRequest, canManageUsers } = useUserRole();
+  const { user, isLoading } = useAuth();
+  const { role } = useUserRole();
   const router = useRouter();
-  
-  // 통계 데이터 상태
+
   const [requests, setRequests] = useState<Request[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [showActivityModal, setShowActivityModal] = useState(false);
 
   useEffect(() => {
-    // 로딩이 완료되고 사용자가 없을 때만 리다이렉트
     if (!isLoading && !user) {
-      console.log('Dashboard: No user found, redirecting to login');
       router.push('/auth/login');
     }
   }, [user, isLoading, router]);
 
-  // 요청 데이터 가져오기
   useEffect(() => {
     const fetchRequests = async () => {
       if (!user) return;
-      
+
       try {
         setStatsLoading(true);
         const { requests, error } = await getRequests();
-        
+
         if (error) {
           console.error('Failed to fetch requests:', error);
         } else {
@@ -58,20 +65,18 @@ export default function DashboardPage() {
 
     const fetchDashboardData = async () => {
       if (!user) return;
-      
+
       try {
-        // 통계 데이터 가져오기
         const statsResponse = await fetch('/api/dashboard/stats');
         const statsData = await statsResponse.json();
-        
+
         if (statsResponse.ok) {
           setDashboardStats(statsData.stats);
         }
 
-        // 활동 데이터 가져오기
         const activitiesResponse = await fetch('/api/dashboard/activities');
         const activitiesData = await activitiesResponse.json();
-        
+
         if (activitiesResponse.ok) {
           setActivities(activitiesData.activities || []);
         }
@@ -83,8 +88,7 @@ export default function DashboardPage() {
     if (user) {
       fetchRequests();
       fetchDashboardData();
-      
-      // 30초마다 데이터 새로고침 (실시간 업데이트)
+
       const interval = setInterval(() => {
         fetchRequests();
         fetchDashboardData();
@@ -93,398 +97,512 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  // 통계 계산
-  const getStats = () => {
-    if (!user) return { total: 0, inProgress: 0, completed: 0, myTasks: 0 };
-
-    const total = requests.length;
-    const inProgress = requests.filter(req => req.status === RequestStatus.IN_PROGRESS).length;
-    const completed = requests.filter(req => req.status === RequestStatus.COMPLETED).length;
-    
-    // 사용자 역할에 따른 "내 작업" 계산
-    let myTasks = 0;
-    if (role === 'designer') {
-      // 설계자는 자신이 생성한 요청
-      myTasks = requests.filter(req => req.requester_id === user.id).length;
-    } else if (role === 'analyst') {
-      // 해석자는 자신에게 할당된 요청
-      myTasks = requests.filter(req => req.assignee_id === user.id).length;
-    } else if (role === 'admin') {
-      // 관리자는 모든 요청
-      myTasks = total;
-    }
-
-    return { total, inProgress, completed, myTasks };
-  };
-
-  const stats = getStats();
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">로딩 중...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">대시보드를 불러오는 중...</p>
+          <p className="mt-2 text-sm text-gray-500">잠시만 기다려주세요</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">로그인 페이지로 이동 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">고고CAE</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{user.email}</span>
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                  {USER_ROLE_LABELS[user.role as keyof typeof USER_ROLE_LABELS]}
-                </span>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+
+      <main className="flex-1 ml-64">
+        {/* 헤더 */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
+                <p className="text-sm text-gray-600 mt-1">오늘의 업무 현황을 한눈에 확인하세요</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                로그아웃
-              </Button>
+              <div className="flex items-center space-x-3">
+                <NotificationBell />
+                <DesignerAndAdmin>
+                  <Button onClick={() => router.push('/requests/create')} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    신규 해석 요청
+                  </Button>
+                </DesignerAndAdmin>
+                <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                    <p className="text-xs text-gray-500">
+                      {USER_ROLE_LABELS[user.role as keyof typeof USER_ROLE_LABELS]}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 메인 콘텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">대시보드</h2>
-          <p className="text-gray-600">
-            {role === 'designer' && '해석 요청을 등록하고 진행 상황을 확인하세요'}
-            {role === 'analyst' && '담당된 해석 요청을 효율적으로 관리하세요'}
-            {role === 'admin' && '전체 시스템을 관리하고 모니터링하세요'}
-            {!role && 'CAE 해석 업무를 효율적으로 관리하세요'}
-          </p>
-        </div>
+        {/* 콘텐츠 */}
+        <div className="p-8">
+          {/* 통계 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* 역할별 첫 번째 카드 */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  {role === 'designer' ? '내 요청' : role === 'analyst' ? '내 담당' : '전체 요청'}
+                </CardTitle>
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statsLoading ? '...' : (dashboardStats?.myTasks || 0)}
+                  </div>
+                  <div className="flex items-center text-sm text-green-600">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span>+12% 지난 달 대비</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">미지정 요청</CardTitle>
-              <div className="h-4 w-4 text-red-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
-              </div>
+            {/* 진행 중 */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">진행 중</CardTitle>
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statsLoading ? '...' : (dashboardStats?.inProgressRequests || 0)}
+                  </div>
+                  <div className="flex items-center text-sm text-green-600">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span>+5% 지난 달 대비</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 마감일 지남 */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">마감일 지남</CardTitle>
+                <div className="p-2 bg-red-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-red-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statsLoading ? '...' : (dashboardStats?.overdueRequests || 0)}
+                  </div>
+                  <div className="flex items-center text-sm text-red-600">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span>+2 지난 달 대비</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 완료율 */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">완료율</CardTitle>
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-3xl font-bold text-gray-900">
+                      {statsLoading ? '...' : `${dashboardStats?.completionRate || 0}%`}
+                    </div>
+                    <div className="flex items-center text-sm text-green-600">
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                      <span>+8% 지난 달 대비</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">완료수</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {statsLoading ? '...' : (dashboardStats?.completedRequests || 0)}건
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 해석 프로젝트 진행현황 */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>
+                {role === 'designer' ? '내 해석 프로젝트 진행현황' : 
+                 role === 'analyst' ? '담당 프로젝트 진행현황' : 
+                 '해석 프로젝트 진행현황'}
+              </CardTitle>
+              <CardDescription>
+                {role === 'designer' ? '내가 요청한 프로젝트의 상태별 분포' : 
+                 role === 'analyst' ? '담당 프로젝트의 상태별 분포' : 
+                 '전체 프로젝트의 상태별 분포'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : (dashboardStats?.pendingRequests || 0)}
+              <div className="space-y-4">
+                {/* 담당자 미지정 */}
+                <div className="flex items-center">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">담당자 미지정</span>
+                  </div>
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-gray-500 h-full rounded-full transition-all"
+                        style={{ width: `${((dashboardStats?.pendingRequests || 0) / (dashboardStats?.totalRequests || 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      {dashboardStats?.pendingRequests || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 시작전 */}
+                <div className="flex items-center">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">시작전</span>
+                  </div>
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-blue-500 h-full rounded-full transition-all"
+                        style={{ width: `${((dashboardStats?.assignedRequests || 0) / (dashboardStats?.totalRequests || 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      {dashboardStats?.assignedRequests || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 진행중 */}
+                <div className="flex items-center">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">진행중</span>
+                  </div>
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-purple-500 h-full rounded-full transition-all"
+                        style={{ width: `${((dashboardStats?.inProgressRequests || 0) / (dashboardStats?.totalRequests || 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      {dashboardStats?.inProgressRequests || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 완료 */}
+                <div className="flex items-center">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">완료</span>
+                  </div>
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-green-500 h-full rounded-full transition-all"
+                        style={{ width: `${((dashboardStats?.completedRequests || 0) / (dashboardStats?.totalRequests || 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      {dashboardStats?.completedRequests || 0}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardStats?.pendingRequests === 0 ? '모든 요청이 처리되었습니다' : '담당자 지정 대기'}
-              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">진행 중</CardTitle>
-              <div className="h-4 w-4 text-yellow-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : (dashboardStats?.inProgressRequests || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardStats?.inProgressRequests === 0 ? '진행 중인 작업이 없습니다' : '진행 중인 작업'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">완료</CardTitle>
-              <div className="h-4 w-4 text-green-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : (dashboardStats?.completedRequests || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardStats?.completedRequests === 0 ? '완료된 작업이 없습니다' : '완료된 작업'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">평균 리드타임</CardTitle>
-              <div className="h-4 w-4 text-blue-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : `${dashboardStats?.averageLeadTime || 0}일`}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardStats?.averageLeadTime === 0 ? '완료된 요청이 없습니다' : '평균 처리 시간'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* KPI 메트릭 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">완료율</CardTitle>
-              <div className="h-4 w-4 text-purple-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : `${dashboardStats?.completionRate || 0}%`}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                전체 요청 대비 완료율
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">내 작업</CardTitle>
-              <div className="h-4 w-4 text-indigo-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : (dashboardStats?.myTasks || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {role === 'designer' ? '내가 생성한 요청' :
-                 role === 'analyst' ? '내가 담당한 요청' :
-                 role === 'admin' ? '전체 요청' : '내 작업'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">전체 요청</CardTitle>
-              <div className="h-4 w-4 text-gray-600">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : (dashboardStats?.totalRequests || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardStats?.totalRequests === 0 ? '아직 등록된 요청이 없습니다' : '총 요청 수'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 대시보드 탭 */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">개요</TabsTrigger>
-            <TabsTrigger value="kanban">칸반 보드</TabsTrigger>
-            <TabsTrigger value="calendar">캘린더</TabsTrigger>
-          </TabsList>
-
-          {/* 개요 탭 */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Settings className="h-5 w-5 mr-2" />
-                    빠른 작업
-                  </CardTitle>
-                  <CardDescription>
-                    자주 사용하는 기능에 빠르게 접근하세요
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <DesignerAndAdmin>
-                    <Button 
-                      className="w-full justify-start" 
-                      onClick={() => router.push('/requests/create')}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      새 해석 요청 생성
-                    </Button>
-                  </DesignerAndAdmin>
+          {/* 빠른 작업 & 최근 활동 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 빠른 작업 */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <CardTitle>빠른 작업</CardTitle>
+                    <CardDescription>자주 사용하는 기능에 빠르게 접근하세요</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {role === 'designer' && (
+                    <>
+                      <Button
+                        onClick={() => router.push('/requests/create')}
+                        className="w-full justify-start h-12 bg-gray-900 hover:bg-gray-800 text-white"
+                      >
+                        <Plus className="h-5 w-5 mr-3" />
+                        신규 해석 요청
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/requests')}
+                        className="w-full justify-start h-12"
+                      >
+                        <FileText className="h-5 w-5 mr-3" />
+                        요청 목록 보기
+                      </Button>
+                    </>
+                  )}
                   
-                  <AnalystAndAdmin>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => router.push('/requests')}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      담당 요청 관리
-                    </Button>
-                  </AnalystAndAdmin>
+                  {role === 'analyst' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/requests')}
+                        className="w-full justify-start h-12"
+                      >
+                        <Eye className="h-5 w-5 mr-3" />
+                        해석 목록 확인
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/requests?filter=assigned')}
+                        className="w-full justify-start h-12"
+                      >
+                        <Users className="h-5 w-5 mr-3" />
+                        담당 해석 프로젝트
+                      </Button>
+                    </>
+                  )}
                   
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => router.push('/requests')}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    요청 목록 보기
-                  </Button>
-                  
-                  <AdminOnly>
-                    <Button variant="outline" className="w-full justify-start" disabled>
-                      <Users className="mr-2 h-4 w-4" />
-                      사용자 관리
-                    </Button>
-                  </AdminOnly>
-                </CardContent>
-              </Card>
+                  {role === 'admin' && (
+                    <>
+                      <Button
+                        onClick={() => router.push('/requests/create')}
+                        className="w-full justify-start h-12 bg-gray-900 hover:bg-gray-800 text-white"
+                      >
+                        <Plus className="h-5 w-5 mr-3" />
+                        신규 해석 요청
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/requests')}
+                        className="w-full justify-start h-12"
+                      >
+                        <Users className="h-5 w-5 mr-3" />
+                        담당 요청 관리
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/requests')}
+                        className="w-full justify-start h-12"
+                      >
+                        <FileText className="h-5 w-5 mr-3" />
+                        요청 목록 보기
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/users')}
+                        className="w-full justify-start h-12"
+                      >
+                        <Users className="h-5 w-5 mr-3" />
+                        사용자 관리
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
+            {/* 최근 활동 */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
                   <CardTitle>최근 활동</CardTitle>
-                  <CardDescription>
-                    최근 작업 내역을 확인하세요
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {activities.length === 0 ? (
-                    <div className="text-center py-8">
+                  <CardDescription>최근 작업 이력을 확인하세요</CardDescription>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowActivityModal(true)}
+                >
+                  전체보기 →
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {activities.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex-shrink-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          activity.type === 'request_created' ? 'bg-yellow-100' :
+                          activity.type === 'request_assigned' ? 'bg-blue-100' :
+                          activity.type === 'request_updated' ? 'bg-orange-100' :
+                          'bg-green-100'
+                        }`}>
+                          {activity.type === 'request_created' && (
+                            <FileText className="h-4 w-4 text-yellow-600" />
+                          )}
+                          {activity.type === 'request_assigned' && (
+                            <Users className="h-4 w-4 text-blue-600" />
+                          )}
+                          {activity.type === 'request_updated' && (
+                            <svg className="h-4 w-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                          {activity.type === 'request_completed' && (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {activity.type === 'request_created' && '새 요청이 생성되었습니다'}
+                            {activity.type === 'request_assigned' && '담당자가 지정되었습니다'}
+                            {activity.type === 'request_updated' && '작업이 진행 중입니다'}
+                            {activity.type === 'request_completed' && '작업이 완료되었습니다'}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {activity.description}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(activity.timestamp).toLocaleString('ko-KR', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {activities.length === 0 && (
+                    <div className="text-center py-12">
                       <div className="text-gray-400 mb-2">
-                        <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+                        <Users className="mx-auto h-12 w-12" />
                       </div>
                       <p className="text-gray-500">아직 활동 내역이 없습니다</p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        첫 번째 해석 요청을 생성해보세요
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-80 overflow-y-auto">
-                      {activities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                          <div className="flex-shrink-0">
-                            {activity.type === 'request_created' && (
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <Plus className="w-4 h-4 text-blue-600" />
-                              </div>
-                            )}
-                            {activity.type === 'request_assigned' && (
-                              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <Users className="w-4 h-4 text-yellow-600" />
-                              </div>
-                            )}
-                            {activity.type === 'request_updated' && (
-                              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                <Calendar className="w-4 h-4 text-orange-600" />
-                              </div>
-                            )}
-                            {activity.type === 'request_completed' && (
-                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                <FileText className="w-4 h-4 text-green-600" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
-                              {activity.title}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {activity.description}
-                            </p>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-xs text-gray-500">
-                                {activity.user_name}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {new Date(activity.timestamp).toLocaleString('ko-KR', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* 칸반 보드 탭 */}
-          <TabsContent value="kanban">
-            <KanbanBoard 
-              requests={requests}
-              onStatusChange={(requestId, newStatus) => {
-                setRequests(prev => 
-                  prev.map(req => 
-                    req.id === requestId 
-                      ? { ...req, status: newStatus }
-                      : req
-                  )
-                );
-              }}
-              onCardClick={(request) => {
-                router.push(`/requests/${request.id}`);
-              }}
-            />
-          </TabsContent>
-
-          {/* 캘린더 탭 */}
-          <TabsContent value="calendar">
-            <CalendarView 
-              requests={requests}
-              onEventClick={(event) => {
-                router.push(`/requests/${event.id}`);
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </main>
+
+      {/* 최근 활동 모달 */}
+      <Dialog open={showActivityModal} onOpenChange={setShowActivityModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>최근 활동</DialogTitle>
+            <DialogDescription>최근 20개의 작업 이력을 확인하세요</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[60vh]">
+            <div className="space-y-4">
+              {activities.slice(0, 20).map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      activity.type === 'request_created' ? 'bg-yellow-100' :
+                      activity.type === 'request_assigned' ? 'bg-blue-100' :
+                      activity.type === 'request_updated' ? 'bg-orange-100' :
+                      'bg-green-100'
+                    }`}>
+                      {activity.type === 'request_created' && (
+                        <FileText className="h-4 w-4 text-yellow-600" />
+                      )}
+                      {activity.type === 'request_assigned' && (
+                        <Users className="h-4 w-4 text-blue-600" />
+                      )}
+                      {activity.type === 'request_updated' && (
+                        <svg className="h-4 w-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                      {activity.type === 'request_completed' && (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {activity.type === 'request_created' && '새 요청이 생성되었습니다'}
+                        {activity.type === 'request_assigned' && '담당자가 지정되었습니다'}
+                        {activity.type === 'request_updated' && '작업이 진행 중입니다'}
+                        {activity.type === 'request_completed' && '작업이 완료되었습니다'}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {activity.description}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(activity.timestamp).toLocaleString('ko-KR', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {activities.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-2">
+                    <Users className="mx-auto h-12 w-12" />
+                  </div>
+                  <p className="text-gray-500">아직 활동 내역이 없습니다</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2 group">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform duration-200">
-                <span className="text-white font-bold text-sm">고</span>
+                <span className="text-white font-bold text-xs">GO</span>
               </div>
               <span className="text-lg font-bold text-gray-900">고고CAE</span>
             </Link>
@@ -379,7 +379,7 @@ export default function Home() {
             <div className="md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">고</span>
+                  <span className="text-white font-bold text-xs">GO</span>
                 </div>
                 <span className="text-xl font-bold text-white">고고CAE</span>
               </div>

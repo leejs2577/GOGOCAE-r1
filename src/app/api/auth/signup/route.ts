@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       options: {
         data: {
           role: validatedData.role,
+          full_name: validatedData.full_name,
         },
       },
     });

@@ -43,17 +43,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 사용자 프로필 정보 조회
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single();
+    // 안전하게 프로필 가져오기 (없으면 자동 생성)
+    const { getUserProfile } = await import('@/lib/supabase/utils');
+    const profile = await getUserProfile(authData.user.id);
 
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
+    if (!profile) {
+      console.error('Failed to get or create profile for user:', authData.user.id);
       return NextResponse.json(
-        { error: { message: '사용자 정보를 가져오는 중 오류가 발생했습니다.' } },
+        { error: { message: '사용자 프로필을 가져올 수 없습니다.' } },
         { status: 500 }
       );
     }
@@ -63,8 +60,9 @@ export async function POST(request: NextRequest) {
       {
         data: {
           user: {
-            id: authData.user.id,
+            id: profile.id,
             email: profile.email,
+            full_name: profile.full_name,
             role: profile.role,
             created_at: profile.created_at,
             updated_at: profile.updated_at,

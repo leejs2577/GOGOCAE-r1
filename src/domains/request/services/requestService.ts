@@ -1,14 +1,49 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Request, CreateRequestData, UpdateRequestData } from '../types';
 
-// 요청 목록 조회
+// 요청 목록 조회 (역할별 필터링)
 export const getRequests = async (): Promise<{ requests: Request[]; error?: string }> => {
   try {
-    // 먼저 요청 목록을 가져옴
-    const { data: requests, error: requestsError } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { requests: [], error: '인증이 필요합니다.' };
+    }
+
+    // 사용자 역할 확인
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      return { requests: [], error: '사용자 프로필을 찾을 수 없습니다.' };
+    }
+
+    let query = supabase
       .from('requests')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // 역할별 필터링
+    switch (profile.role) {
+      case 'designer':
+        // 설계자: 자신이 요청한 프로젝트만
+        query = query.eq('requester_id', user.id);
+        break;
+      case 'analyst':
+        // 해석자: 담당자 미지정 프로젝트 + 자신이 담당하는 프로젝트
+        query = query.or(`assignee_id.is.null,assignee_id.eq.${user.id}`);
+        break;
+      case 'admin':
+        // 관리자: 모든 프로젝트
+        break;
+      default:
+        return { requests: [], error: '권한이 없습니다.' };
+    }
+
+    const { data: requests, error: requestsError } = await query;
 
     if (requestsError) {
       console.error('Get requests error:', requestsError);

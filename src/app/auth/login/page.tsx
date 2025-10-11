@@ -30,21 +30,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">고고CAE</h1>
-          <p className="mt-2 text-sm text-gray-600">CAE 해석 업무를 한눈에</p>
-        </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      {/* 상단 로고 */}
+      <div className="absolute top-8 left-8">
+        <Link href="/" className="flex items-center space-x-2 group">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-white font-bold text-sm">GO</span>
+          </div>
+          <span className="text-xl font-bold text-gray-900">고고CAE</span>
+        </Link>
+      </div>
+
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">로그인</h1>
+            <p className="mt-2 text-sm text-gray-600">계정에 로그인하여 서비스를 이용하세요</p>
+          </div>
 
         <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">로그인</CardTitle>
-            <CardDescription className="text-center">
-              계정에 로그인하여 서비스를 이용하세요
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">이메일</Label>
@@ -129,6 +134,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { RequestStatus } from '@/domains/request/types';
+import { createNotification } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
 
@@ -124,9 +125,41 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       [RequestStatus.COMPLETED]: '완료로 변경되었습니다.',
     };
 
-    return NextResponse.json({ 
+    const statusKoreanNames: Record<string, string> = {
+      [RequestStatus.PENDING]: '대기중',
+      [RequestStatus.ASSIGNED]: '담당자 지정됨',
+      [RequestStatus.IN_PROGRESS]: '진행중',
+      [RequestStatus.COMPLETED]: '완료',
+    };
+
+    // 알림 생성 - 관련된 사용자들에게 전송
+    const notificationRecipients: string[] = [];
+
+    // 요청자에게 알림
+    if (existingRequest.requester_id !== user.id) {
+      notificationRecipients.push(existingRequest.requester_id);
+    }
+
+    // 담당자에게 알림 (담당자가 있고, 현재 사용자가 아닌 경우)
+    if (existingRequest.assignee_id && existingRequest.assignee_id !== user.id) {
+      notificationRecipients.push(existingRequest.assignee_id);
+    }
+
+    // 알림 전송
+    const notificationType = newStatus === RequestStatus.COMPLETED ? 'request_completed' : 'request_updated';
+    for (const recipientId of notificationRecipients) {
+      await createNotification({
+        userId: recipientId,
+        type: notificationType,
+        title: '요청 상태가 변경되었습니다',
+        message: `"${existingRequest.title}" 요청의 상태가 "${statusKoreanNames[newStatus]}"로 변경되었습니다.`,
+        relatedRequestId: id,
+      });
+    }
+
+    return NextResponse.json({
       request: updatedRequest,
-      message: statusMessages[newStatus] || '상태가 변경되었습니다.' 
+      message: statusMessages[newStatus] || '상태가 변경되었습니다.'
     });
   } catch (error) {
     console.error('Update status error:', error);

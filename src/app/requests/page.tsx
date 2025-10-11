@@ -295,8 +295,16 @@ export default function RequestsPage() {
           </div>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">해석 요청</h1>
-              <p className="text-gray-600">CAE 해석 요청을 관리하세요</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {role === 'designer' ? '내 해석 요청' : 
+                 role === 'analyst' ? '해석 요청 확인' : 
+                 '해석 요청 관리'}
+              </h1>
+              <p className="text-gray-600">
+                {role === 'designer' ? '내가 요청한 CAE 해석 프로젝트를 확인하세요' : 
+                 role === 'analyst' ? '담당할 수 있는 CAE 해석 요청을 확인하세요' : 
+                 '모든 CAE 해석 요청을 관리하세요'}
+              </p>
             </div>
             {canCreateRequest && (
               <Button onClick={handleCreateRequest}>

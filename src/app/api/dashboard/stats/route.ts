@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServerSupabaseAdmin } from '@/lib/supabase/server';
 import { RequestStatus } from '@/domains/request/types';
 
 export const runtime = 'nodejs';
@@ -10,6 +10,7 @@ interface DashboardStats {
   assignedRequests: number;
   inProgressRequests: number;
   completedRequests: number;
+  overdueRequests: number; // 마감일 지남 요청 수
   averageLeadTime: number;
   completionRate: number;
   myTasks: number;
@@ -28,11 +29,43 @@ export async function GET() {
       );
     }
 
-    // 모든 요청 데이터 가져오기
-    const { data: requests, error } = await supabase
+    // 사용자 역할 확인 (안전하게)
+    const { getUserProfile } = await import('@/lib/supabase/utils');
+    const profile = await getUserProfile(user.id);
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: '사용자 프로필을 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    const userRole = profile.role;
+
+    let query = supabase
       .from('requests')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // 역할별 필터링
+    switch (userRole) {
+      case 'designer':
+        // 설계자: 자신이 요청한 프로젝트만
+        query = query.eq('requester_id', user.id);
+        break;
+      case 'analyst':
+        // 해석자: 담당자 미지정 프로젝트 + 자신이 담당하는 프로젝트
+        query = query.or(`assignee_id.is.null,assignee_id.eq.${user.id}`);
+        break;
+      case 'admin':
+        // 관리자: 모든 프로젝트
+        break;
+      default:
+        // 기본적으로 설계자 권한으로 처리
+        query = query.eq('requester_id', user.id);
+    }
+
+    const { data: requests, error } = await query;
 
     if (error) {
       console.error('Failed to fetch requests:', error);
@@ -48,15 +81,29 @@ export async function GET() {
     const assignedRequests = requests?.filter(req => req.status === RequestStatus.ASSIGNED).length || 0;
     const inProgressRequests = requests?.filter(req => req.status === RequestStatus.IN_PROGRESS).length || 0;
     const completedRequests = requests?.filter(req => req.status === RequestStatus.COMPLETED).length || 0;
+    
+    // 마감일 지남 요청 수 계산
+    const today = new Date();
+    const overdueRequests = requests?.filter(req => {
+      if (!req.requested_deadline) return false;
+      const deadline = new Date(req.requested_deadline);
+      return deadline < today && req.status !== RequestStatus.COMPLETED;
+    }).length || 0;
 
     // 사용자 역할에 따른 내 작업 계산
     let myTasks = 0;
-    if (user.role === 'designer') {
-      myTasks = requests?.filter(req => req.requester_id === user.id).length || 0;
-    } else if (user.role === 'analyst') {
-      myTasks = requests?.filter(req => req.assignee_id === user.id).length || 0;
-    } else if (user.role === 'admin') {
-      myTasks = totalRequests;
+    switch (userRole) {
+      case 'designer':
+        myTasks = requests?.filter(req => req.requester_id === user.id).length || 0;
+        break;
+      case 'analyst':
+        myTasks = requests?.filter(req => req.assignee_id === user.id).length || 0;
+        break;
+      case 'admin':
+        myTasks = totalRequests;
+        break;
+      default:
+        myTasks = requests?.filter(req => req.requester_id === user.id).length || 0;
     }
 
     // 평균 리드타임 계산 (완료된 요청만)
@@ -92,6 +139,7 @@ export async function GET() {
       assignedRequests,
       inProgressRequests,
       completedRequests,
+      overdueRequests,
       averageLeadTime,
       completionRate,
       myTasks

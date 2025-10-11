@@ -220,9 +220,9 @@ export const useAuth = () => {
   const handleUpdatePassword = useCallback(async (data: UpdatePasswordData) => {
     try {
       updateAuthState({ isLoading: true, error: null });
-      
+
       const result = await updatePassword(data);
-      
+
       if (result.error) {
         updateAuthState({ isLoading: false, error: result.error });
         toast({
@@ -246,6 +246,29 @@ export const useAuth = () => {
     }
   }, [updateAuthState, toast]);
 
+  // 사용자 정보 새로고침
+  const refreshUser = useCallback(async () => {
+    try {
+      console.log('Refreshing user data...');
+      updateAuthState({ isLoading: true, error: null });
+
+      const result = await getCurrentUser();
+      console.log('Refresh user result:', result);
+
+      if (result.user) {
+        updateAuthState({ user: result.user, isLoading: false });
+        return true;
+      } else {
+        updateAuthState({ isLoading: false, error: result.error || null });
+        return false;
+      }
+    } catch (error) {
+      console.error('Refresh user error:', error);
+      updateAuthState({ isLoading: false, error: '사용자 정보 새로고침 중 오류가 발생했습니다.' });
+      return false;
+    }
+  }, [updateAuthState]);
+
   return {
     ...authState,
     signup: handleSignup,
@@ -253,5 +276,6 @@ export const useAuth = () => {
     logout: handleLogout,
     resetPassword: handleResetPassword,
     updatePassword: handleUpdatePassword,
+    refreshUser,
   };
 };

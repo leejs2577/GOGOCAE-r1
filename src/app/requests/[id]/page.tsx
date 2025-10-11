@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Home, Calendar, User, FileText, Download, Upload, FileUp, Plus } from 'lucide-react';
+import { ArrowLeft, Home, Calendar, User, FileText, Download, Upload, FileUp, Plus, UserCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +137,49 @@ export default function RequestDetailPage() {
     const isAnalyst = role === 'analyst';
     const isAssignee = request.assignee_id === user.id;
     return isAnalyst && isAssignee;
+  };
+
+  const canAssignSelf = () => {
+    if (!request || !user) {
+      return false;
+    }
+    const isAnalyst = role === 'analyst';
+    const isNotAssigned = !request.assignee_id;
+    const isNotAlreadyAssignee = request.assignee_id !== user.id;
+    return isAnalyst && isNotAssigned && isNotAlreadyAssignee;
+  };
+
+  const handleAssignSelf = async () => {
+    if (!request || !user) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/requests/${requestId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignee_id: user.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '담당자 지정에 실패했습니다.');
+      }
+
+      // 요청 정보 새로고침
+      const requestResponse = await fetch(`/api/requests/${requestId}`);
+      const requestData = await requestResponse.json();
+      if (requestResponse.ok) {
+        setRequest(requestData.request);
+      }
+    } catch (error) {
+      console.error('Assign self error:', error);
+      alert(error instanceof Error ? error.message : '담당자 지정에 실패했습니다.');
+    }
   };
 
   if (loading) {
@@ -321,23 +364,42 @@ export default function RequestDetailPage() {
             </Card>
 
             {/* 담당자 정보 */}
-            {request.assignee && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    담당자
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  담당자
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {request.assignee ? (
                   <div className="space-y-2">
                     <p className="font-medium">{request.assignee.full_name || request.assignee.email}</p>
                     <p className="text-sm text-gray-500">{request.assignee.email}</p>
                     <Badge variant="outline">{request.assignee.role}</Badge>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-center py-4">
+                      <User className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">담당자가 지정되지 않았습니다</p>
+                    </div>
+                    
+                    {/* 담당자 지정 버튼 (해석자만) */}
+                    {canAssignSelf() && (
+                      <Button 
+                        onClick={handleAssignSelf}
+                        className="w-full"
+                        size="sm"
+                      >
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        나를 담당자로 지정
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* 상태 정보 */}
             <Card>

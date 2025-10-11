@@ -1,303 +1,239 @@
 'use client';
 
-import { useState } from 'react';
-import { Calendar, Views, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Search, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
-import { Request, RequestStatus, RequestPriority } from '@/domains/request/types';
-import { useRouter } from 'next/navigation';
-
-// moment 로케일 설정
-import 'moment/locale/ko';
-moment.locale('ko');
-
-// react-big-calendar 로케일 설정
-const localizer = momentLocalizer(moment);
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  resource: {
-    request: Request;
-  };
-}
+import { useMemo } from 'react';
+import { Card } from '@/components/ui/card';
+import { Request } from '@/domains/request/types';
+import { Badge } from '@/components/ui/badge';
 
 interface CalendarViewProps {
   requests: Request[];
-  onEventClick?: (event: CalendarEvent) => void;
+  currentDate?: Date;
+  onEventClick?: (event: any) => void;
 }
 
-export default function CalendarView({ requests, onEventClick }: CalendarViewProps) {
-  const [view, setView] = useState(Views.MONTH);
-  const [date, setDate] = useState(new Date());
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const router = useRouter();
+export default function CalendarView({ requests, currentDate = new Date(), onEventClick }: CalendarViewProps) {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
 
-  // 요청을 캘린더 이벤트로 변환
-  const events: CalendarEvent[] = requests
-    .filter(request => {
-      // 검색 필터
-      if (searchTerm && !request.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-      // 상태 필터
-      if (statusFilter !== 'all' && request.status !== statusFilter) {
-        return false;
-      }
-      // 우선순위 필터
-      if (priorityFilter !== 'all' && request.priority !== priorityFilter) {
-        return false;
-      }
-      return true;
-    })
-    .map(request => ({
-      id: request.id,
-      title: request.title,
-      start: new Date(request.created_at),
-      end: request.requested_deadline ? new Date(request.requested_deadline) : new Date(request.created_at),
-      resource: {
-        request
-      }
-    }));
+  // 캘린더 그리드 생성
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
 
-  // 이벤트 클릭 핸들러
-  const handleEventClick = (event: CalendarEvent) => {
-    if (onEventClick) {
-      onEventClick(event);
-    } else {
-      router.push(`/requests/${event.id}`);
+    const days = [];
+
+    // 이전 달 날짜들
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        day: prevMonthLastDay - i,
+        isCurrentMonth: false,
+        date: new Date(year, month - 1, prevMonthLastDay - i)
+      });
+    }
+
+    // 현재 달 날짜들
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push({
+        day,
+        isCurrentMonth: true,
+        date: new Date(year, month, day)
+      });
+    }
+
+    // 다음 달 날짜들 (7의 배수로 맞추기)
+    const remainingDays = 42 - days.length; // 6주 * 7일
+    for (let day = 1; day <= remainingDays; day++) {
+      days.push({
+        day,
+        isCurrentMonth: false,
+        date: new Date(year, month + 1, day)
+      });
+    }
+
+    return days;
+  }, [year, month]);
+
+  // 날짜별 이벤트 매핑
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, Request[]>();
+
+    requests.forEach(request => {
+      // 마감일 기준으로 표시 (없으면 생성일)
+      const eventDate = request.requested_deadline
+        ? new Date(request.requested_deadline)
+        : new Date(request.created_at);
+
+      const dateKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`;
+
+      if (!map.has(dateKey)) {
+        map.set(dateKey, []);
+      }
+      map.get(dateKey)!.push(request);
+    });
+
+    return map;
+  }, [requests]);
+
+  // 오늘 날짜 확인
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
+  // 날짜의 이벤트 가져오기
+  const getEventsForDate = (date: Date) => {
+    const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    return eventsByDate.get(dateKey) || [];
+  };
+
+  // 상태별 색상 가져오기
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'in_progress':
+        return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
+      case 'assigned':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'pending':
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };
 
-  // 이벤트 스타일 커스터마이징
-  const eventStyleGetter = (event: CalendarEvent) => {
-    const request = event.resource.request;
-    const priorityClass = `priority-${request.priority}`;
-    
-    return {
-      className: priorityClass,
-      style: {
-        backgroundColor: getPriorityColor(request.priority),
-        border: 'none',
-        borderRadius: '4px',
-        color: 'white',
-        fontSize: '12px',
-        fontWeight: '500',
-        padding: '2px 6px',
-        margin: '1px 2px',
-        cursor: 'pointer',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap'
-      }
-    };
-  };
-
-  // 우선순위별 색상 반환
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return '#dc2626';
-      case 'high': return '#ef4444';
-      case 'medium': return '#eab308';
-      case 'low': return '#22c55e';
-      default: return '#3b82f6';
+  const getStatusDotColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500';
+      case 'in_progress':
+        return 'bg-purple-500';
+      case 'assigned':
+        return 'bg-blue-500';
+      case 'pending':
+        return 'bg-gray-500';
+      case 'cancelled':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
-  // 이벤트 제목 포맷터
-  const eventPropGetter = (event: CalendarEvent) => {
-    return {
-      title: event.resource.request.title
-    };
-  };
-
-  // 커스텀 툴바 컴포넌트
-  const CustomToolbar = (props: any) => {
-    const goToBack = () => props.onNavigate('PREV');
-    const goToNext = () => props.onNavigate('NEXT');
-    const goToCurrent = () => props.onNavigate('TODAY');
-
-    return (
-      <div className="rbc-toolbar">
-        <div className="rbc-toolbar-nav-group">
-          <button onClick={goToBack} className="nav-arrow-btn">
-            &lt;
-          </button>
-          <span className="rbc-toolbar-label">
-            {moment(props.date).format('YYYY년 M월')}
-          </span>
-          <button onClick={goToNext} className="nav-arrow-btn">
-            &gt;
-          </button>
-        </div>
-        <button onClick={goToCurrent} className="today-btn">
-          오늘
-        </button>
-      </div>
-    );
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed': return '완료';
+      case 'in_progress': return '진행중';
+      case 'assigned': return '지정됨';
+      case 'pending': return '대기';
+      case 'cancelled': return '취소됨';
+      default: return status;
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* 헤더 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-6 w-6" />
-            캘린더 뷰
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* 검색 및 필터 */}
-          <div className="calendar-search-container">
-            <div className="calendar-search">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="요청명으로 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+    <Card className="p-6">
+      {/* 캘린더 헤더 */}
+      <div className="grid grid-cols-7 gap-px mb-2">
+        {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+          <div
+            key={day}
+            className={`text-center text-sm font-semibold py-2 ${
+              index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
+            }`}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* 캘린더 그리드 */}
+      <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200">
+        {calendarDays.map((dayInfo, index) => {
+          const dayOfWeek = index % 7;
+          const events = getEventsForDate(dayInfo.date);
+
+          return (
+            <div
+              key={`${dayInfo.date.toISOString()}-${index}`}
+              className={`bg-white min-h-[140px] p-2 ${
+                !dayInfo.isCurrentMonth ? 'bg-gray-50' : ''
+              } ${
+                isToday(dayInfo.date) ? 'ring-2 ring-inset ring-blue-500' : ''
+              }`}
+            >
+              {/* 날짜 표시 */}
+              <div className={`text-sm font-semibold mb-2 ${
+                !dayInfo.isCurrentMonth ? 'text-gray-400' :
+                isToday(dayInfo.date) ? 'text-blue-600' :
+                dayOfWeek === 0 ? 'text-red-600' :
+                dayOfWeek === 6 ? 'text-blue-600' :
+                'text-gray-900'
+              }`}>
+                {dayInfo.day}
+              </div>
+
+              {/* 이벤트 목록 */}
+              <div className="space-y-1">
+                {events.slice(0, 3).map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => onEventClick && onEventClick(event)}
+                    className={`
+                      px-2 py-1 rounded text-xs cursor-pointer
+                      transition-colors truncate
+                      ${getStatusColor(event.status)}
+                    `}
+                    title={`${event.title} - ${getStatusLabel(event.status)}`}
+                  >
+                    <div className="flex items-center gap-1">
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getStatusDotColor(event.status)}`}></div>
+                      <span className="truncate font-medium">{event.title}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 더 많은 이벤트가 있을 경우 */}
+                {events.length > 3 && (
+                  <div className="text-xs text-gray-500 pl-2 cursor-pointer hover:text-gray-700">
+                    +{events.length - 3}개 더보기
+                  </div>
+                )}
               </div>
             </div>
-            
-            <div className="calendar-filter">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="상태 필터" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">모든 상태</SelectItem>
-                  <SelectItem value={RequestStatus.PENDING}>대기중</SelectItem>
-                  <SelectItem value={RequestStatus.ASSIGNED}>담당자 지정됨</SelectItem>
-                  <SelectItem value={RequestStatus.IN_PROGRESS}>진행중</SelectItem>
-                  <SelectItem value={RequestStatus.COMPLETED}>완료</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="calendar-filter">
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="우선순위 필터" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">모든 우선순위</SelectItem>
-                  <SelectItem value={RequestPriority.HIGH}>높음</SelectItem>
-                  <SelectItem value={RequestPriority.MEDIUM}>보통</SelectItem>
-                  <SelectItem value={RequestPriority.LOW}>낮음</SelectItem>
-                  <SelectItem value={RequestPriority.URGENT}>긴급</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              className="calendar-new-request flex items-center gap-2"
-              onClick={() => router.push('/requests/create')}
-            >
-              <Plus className="w-4 h-4" />
-              새 요청
-            </Button>
-          </div>
-
-          {/* 뷰 전환 버튼 */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              variant={view === Views.MONTH ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView(Views.MONTH)}
-            >
-              월
-            </Button>
-            <Button
-              variant={view === Views.WEEK ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView(Views.WEEK)}
-            >
-              주
-            </Button>
-            <Button
-              variant={view === Views.DAY ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView(Views.DAY)}
-            >
-              일
-            </Button>
-          </div>
-
-          {/* 캘린더 */}
-          <div className="h-[600px] border border-gray-200 rounded-lg overflow-hidden">
-            <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: '100%' }}
-              view={view}
-              onView={setView}
-              date={date}
-              onNavigate={setDate}
-              onSelectEvent={handleEventClick}
-              eventPropGetter={eventStyleGetter}
-              components={{
-                toolbar: CustomToolbar
-              }}
-              messages={{
-                next: '다음',
-                previous: '이전',
-                today: '오늘',
-                month: '월',
-                week: '주',
-                day: '일',
-                agenda: '일정',
-                date: '날짜',
-                time: '시간',
-                event: '이벤트',
-                noEventsInRange: '이 기간에 일정이 없습니다.',
-                showMore: (total) => `+${total}개 더 보기`
-              }}
-              popup
-              popupOffset={{ x: 0, y: 5 }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          );
+        })}
+      </div>
 
       {/* 범례 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">우선순위 범례</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded"></div>
-              <span>긴급</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-orange-500 rounded"></div>
-              <span>높음</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span>보통</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span>낮음</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <div className="mt-6 flex items-center justify-center space-x-6 text-sm">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+          <span className="text-gray-700">대기</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span className="text-gray-700">지정됨</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+          <span className="text-gray-700">진행중</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <span className="text-gray-700">완료</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span className="text-gray-700">취소됨</span>
+        </div>
+      </div>
+    </Card>
   );
 }
